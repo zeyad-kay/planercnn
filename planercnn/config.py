@@ -191,11 +191,12 @@ class Config(object):
             if torch.cuda.is_available():
                 self.URANGE_UNIT = ((torch.arange(self.IMAGE_MAX_DIM, requires_grad=False).cuda().float() + 0.5) / self.IMAGE_MAX_DIM).view((1, -1)).repeat(self.IMAGE_MIN_DIM, 1)
                 self.VRANGE_UNIT = ((torch.arange(self.IMAGE_MIN_DIM, requires_grad=False).cuda().float() + 0.5) / self.IMAGE_MIN_DIM).view((-1, 1)).repeat(1, self.IMAGE_MAX_DIM)
+                self.ONES = torch.ones(self.URANGE_UNIT.shape, requires_grad=False).cuda()
             else:
                 self.URANGE_UNIT = ((torch.arange(self.IMAGE_MAX_DIM, requires_grad=False).float() + 0.5) / self.IMAGE_MAX_DIM).view((1, -1)).repeat(self.IMAGE_MIN_DIM, 1)
                 self.VRANGE_UNIT = ((torch.arange(self.IMAGE_MIN_DIM, requires_grad=False).float() + 0.5) / self.IMAGE_MIN_DIM).view((-1, 1)).repeat(1, self.IMAGE_MAX_DIM)
+                self.ONES = torch.ones(self.URANGE_UNIT.shape, requires_grad=False)
             
-            self.ONES = torch.ones(self.URANGE_UNIT.shape, requires_grad=False)
             pass
         
         

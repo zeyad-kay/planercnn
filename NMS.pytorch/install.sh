@@ -2,7 +2,7 @@
 
 CUDA_PATH=/usr/local/cuda-9.0
 
-echo "Compiling crop_and_resize kernels by nvcc..."
+echo "Compiling nms kernels by nvcc..."
 cd nms/src/cuda
 $CUDA_PATH/bin/nvcc -c -o nms_kernel.cu.o nms_kernel.cu -x cu -Xcompiler -fPIC -arch=sm_62
 
