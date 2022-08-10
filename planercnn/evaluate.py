@@ -531,9 +531,15 @@ def evaluate(options):
 
     print('the number of images', len(dataset))
 
-    dataloader = DataLoader(dataset, batch_size=1, shuffle=False, num_workers=1)
+    dataloader = DataLoader(dataset, batch_size=1, shuffle=False, num_workers=0)
 
     epoch_losses = []
+
+    FPS = int(dataset.input_video.get(cv2.CAP_PROP_FPS))
+    SIZE = (int(dataset.input_video.get(cv2.CAP_PROP_FRAME_WIDTH)), int(dataset.input_video.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+
+    output_depth_video = cv2.VideoWriter('depth.mp4',cv2.VideoWriter_fourcc(*'mp4v'), FPS, SIZE)
+    output_mask_video = cv2.VideoWriter('mask.mp4',cv2.VideoWriter_fourcc(*'mp4v'), FPS, SIZE, 0)
     data_iterator = tqdm(dataloader, total=len(dataset))
 
     specified_suffix = options.suffix
@@ -610,7 +616,6 @@ def evaluate(options):
 
             if sampleIndex >= options.numTestingImages:
                 break
-
             with torch.no_grad():
                 detection_pair = detector.detect(sample)
                 pass
@@ -630,17 +635,24 @@ def evaluate(options):
                     continue
             else:
                 for c in range(len(detection_pair)):
-                    np.save(options.test_dir + '/' + str(sampleIndex % 500) + '_plane_parameters_' + str(c) + '.npy', detection_pair[c]['detection'][:, 6:9])
-                    np.save(options.test_dir + '/' + str(sampleIndex % 500) + '_plane_masks_' + str(c) + '.npy', detection_pair[c]['masks'][:, 80:560])
+                    # np.save(options.test_dir + '/' + str(sampleIndex % 500) + '_plane_parameters_' + str(c) + '.npy', detection_pair[c]['detection'][:, 6:9])
+                    # np.save(options.test_dir + '/' + str(sampleIndex % 500) + '_plane_masks_' + str(c) + '.npy', detection_pair[c]['masks'][:, 80:560])
                     continue
                 pass
+            
+            res = visualizeBatchPair(options, config, input_pair, detection_pair, indexOffset=sampleIndex % 500, suffix='_' + name + options.modelType, write_ply=options.testingIndex >= 0, write_new_view=options.testingIndex >= 0 and 'occlusion' in options.suffix)
+            output_depth_video.write(res["depth"])
+            output_mask_video.write(detection_pair[0]["mask"][0].numpy().astype(np.uint8))
                             
             if sampleIndex < 30 or options.debug or options.dataset != '':
-                visualizeBatchPair(options, config, input_pair, detection_pair, indexOffset=sampleIndex % 500, suffix='_' + name + options.modelType, write_ply=options.testingIndex >= 0, write_new_view=options.testingIndex >= 0 and 'occlusion' in options.suffix)
+                # visualizeBatchPair(options, config, input_pair, detection_pair, indexOffset=sampleIndex % 500, suffix='_' + name + options.modelType, write_ply=options.testingIndex >= 0, write_new_view=options.testingIndex >= 0 and 'occlusion' in options.suffix)
                 pass
             if sampleIndex >= options.numTestingImages:
                 break
             continue
+        
+
+
         if 'inference' not in options.dataset:
             options.keyname = name
             printStatisticsDetection(options, statistics)
@@ -673,6 +685,9 @@ def evaluate(options):
     # plt.show()
     # plt.imshow(detection_pair[0]["mask"][0])
     # plt.show()
+    dataset.input_video.release()
+    output_depth_video.release()
+    output_mask_video.release()
     return
 
 if __name__ == '__main__':

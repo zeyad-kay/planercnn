@@ -33,7 +33,7 @@ class InferenceDataset(Dataset):
                                                       config.BACKBONE_SHAPES,
                                                       config.BACKBONE_STRIDES,
                                                       config.RPN_ANCHOR_STRIDE)
-        return
+        self.input_video = cv2.VideoCapture('video.mp4')
 
     def __getitem__(self, index):
         t = int(time.time() * 1000000)
@@ -47,10 +47,15 @@ class InferenceDataset(Dataset):
             index = index % len(self.imagePaths)
             pass
 
-        imagePath = self.imagePaths[index]
-        image = cv2.imread(imagePath)
-        extrinsics = np.eye(4, dtype=np.float32)
+        # imagePath = self.imagePaths[index]
+        # image = cv2.imread(imagePath)
 
+        success, frame = self.input_video.read()
+        extrinsics = np.eye(4, dtype=np.float32)
+        if not success:
+            self.input_video.release()
+            raise IndexError()
+        
         if isinstance(self.camera, list):
             if isinstance(self.camera[index], str):
                 camera = np.zeros(6)
@@ -70,22 +75,18 @@ class InferenceDataset(Dataset):
         else:
             assert(False)
             pass
-
-        image = cv2.resize(image, (640, 480), interpolation=cv2.INTER_LINEAR)
+        
+        image = cv2.resize(frame, (640, 480), interpolation=cv2.INTER_LINEAR)
         camera[[0, 2, 4]] *= 640.0 / camera[4]        
         camera[[1, 3, 5]] *= 480.0 / camera[5]
-
+        
         ## The below codes just fill in dummy values for all other data entries which are not used for inference. You can ignore everything except some preprocessing operations on "image".
         depth = np.zeros((self.config.IMAGE_MIN_DIM, self.config.IMAGE_MAX_DIM), dtype=np.float32)
         segmentation = np.zeros((self.config.IMAGE_MIN_DIM, self.config.IMAGE_MAX_DIM), dtype=np.int32)
-
-
         planes = np.zeros((segmentation.max() + 1, 3))
-
         instance_masks = []
         class_ids = []
         parameters = []
-
         if len(planes) > 0:
             if 'joint' in self.config.ANCHOR_TYPE:
                 distances = np.linalg.norm(np.expand_dims(planes, 1) - self.config.ANCHOR_PLANES, axis=-1)
@@ -107,7 +108,7 @@ class InferenceDataset(Dataset):
                 plane_normals = planes / np.expand_dims(plane_offsets, axis=-1)
                 pass
             pass
-
+        
         for planeIndex, plane in enumerate(planes):
             m = segmentation == planeIndex
             if m.sum() < 1:
@@ -137,16 +138,16 @@ class InferenceDataset(Dataset):
                 assert(False)
                 pass
             continue
-
+        
         parameters = np.array(parameters)
         mask = np.stack(instance_masks, axis=2)
         class_ids = np.array(class_ids, dtype=np.int32)
-
         image, image_metas, gt_class_ids, gt_boxes, gt_masks, gt_parameters = load_image_gt(self.config, index, image, depth, mask, class_ids, parameters, augment=False)
+        
         ## RPN Targets
         rpn_match, rpn_bbox = build_rpn_targets(image.shape, self.anchors,
                                                 gt_class_ids, gt_boxes, self.config)
-
+        
         ## If more instances than fits in the array, sub-sample from them.
         if gt_boxes.shape[0] > self.config.MAX_GT_INSTANCES:
             ids = np.random.choice(
@@ -156,24 +157,20 @@ class InferenceDataset(Dataset):
             gt_masks = gt_masks[:, :, ids]
             gt_parameters = gt_parameters[ids]
             pass
-
+        
         ## Add to batch
         rpn_match = rpn_match[:, np.newaxis]
         image = utils.mold_image(image.astype(np.float32), self.config)
-
         depth = np.concatenate([np.zeros((80, 640)), depth, np.zeros((80, 640))], axis=0).astype(np.float32)
         segmentation = np.concatenate([np.full((80, 640), fill_value=-1), segmentation, np.full((80, 640), fill_value=-1)], axis=0).astype(np.float32)
-
         data_pair = [image.transpose((2, 0, 1)).astype(np.float32), image_metas, rpn_match.astype(np.int32), rpn_bbox.astype(np.float32), gt_class_ids.astype(np.int32), gt_boxes.astype(np.float32), gt_masks.transpose((2, 0, 1)).astype(np.float32), gt_parameters[:, :-1].astype(np.float32), depth.astype(np.float32), extrinsics.astype(np.float32), planes.astype(np.float32), segmentation.astype(np.int64), gt_parameters[:, -1].astype(np.int32)]
         data_pair = data_pair + data_pair
-
         data_pair.append(np.zeros(7, np.float32))
-
         data_pair.append(planes)
         data_pair.append(planes)
         data_pair.append(np.zeros((len(planes), len(planes))))
         data_pair.append(camera.astype(np.float32))
         return data_pair
-
+    
     def __len__(self):
-        return len(self.imagePaths)
+        return int(self.input_video.get(cv2.CAP_PROP_FRAME_COUNT))

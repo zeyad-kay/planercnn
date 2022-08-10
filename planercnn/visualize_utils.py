@@ -84,11 +84,11 @@ def visualizeBatchDeMoN(options, input_dict, results, indexOffset=0, prefix='', 
 def visualizeBatchPair(options, config, inp_pair, detection_pair, indexOffset=0, prefix='', suffix='', write_ply=False, write_new_view=False):
     detection_images = []    
     for pair_index, (input_dict, detection_dict) in enumerate(zip(inp_pair, detection_pair)):
-        image_dict = visualizeBatchDetection(options, config, input_dict, detection_dict, indexOffset=indexOffset, prefix=prefix, suffix='_' + str(pair_index), prediction_suffix=suffix, write_ply=write_ply, write_new_view=write_new_view)
+        image_dict, MYCUSTOMDICT = visualizeBatchDetection(options, config, input_dict, detection_dict, indexOffset=indexOffset, prefix=prefix, suffix='_' + str(pair_index), prediction_suffix=suffix, write_ply=write_ply, write_new_view=write_new_view)
         detection_images.append(image_dict['detection'])
         continue
     detection_image = tileImages([detection_images])
-    return
+    return MYCUSTOMDICT
 
 def visualizeBatchRefinement(options, config, input_dict, results, indexOffset=0, prefix='', suffix='', concise=False):
     if not concise:
@@ -169,6 +169,7 @@ def visualizeBatchRefinement(options, config, input_dict, results, indexOffset=0
     return
 
 def visualizeBatchDetection(options, config, input_dict, detection_dict, indexOffset=0, prefix='', suffix='', prediction_suffix='', write_ply=False, write_new_view=False):
+    MYCUSTOMDICT = {}
     image_dict = {}
     images = input_dict['image'].detach().cpu().numpy().transpose((0, 2, 3, 1))
     images = unmold_image(images, config)
@@ -245,6 +246,7 @@ def visualizeBatchDetection(options, config, input_dict, detection_dict, indexOf
         if options.debug:
             valid_mask = (depth_gt > 1e-4) * (input_dict['segmentation'].detach().cpu().numpy()[0] >= 0) * (detection_dict['mask'].detach().cpu().numpy().squeeze() > 0.5)
             pass
+        MYCUSTOMDICT["depth"] = drawDepthImage(depth_pred[80:560])
         pass
     
     if 'depth_np' in detection_dict:
@@ -359,7 +361,7 @@ def visualizeBatchDetection(options, config, input_dict, detection_dict, indexOf
         except:
             pass
         pass
-    return image_dict
+    return image_dict, MYCUSTOMDICT
 
 
 def visualizeBatchDepth(options, config, input_dict, detection_dict, indexOffset=0, prefix='', suffix='', write_ply=False):
