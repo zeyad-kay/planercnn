@@ -615,7 +615,8 @@ def evaluate(options):
                 continue
 
             if sampleIndex >= options.numTestingImages:
-                break
+                # break
+                pass
             with torch.no_grad():
                 detection_pair = detector.detect(sample)
                 pass
@@ -642,13 +643,14 @@ def evaluate(options):
             
             res = visualizeBatchPair(options, config, input_pair, detection_pair, indexOffset=sampleIndex % 500, suffix='_' + name + options.modelType, write_ply=options.testingIndex >= 0, write_new_view=options.testingIndex >= 0 and 'occlusion' in options.suffix)
             output_depth_video.write(res["depth"])
-            output_mask_video.write(detection_pair[0]["mask"][0].numpy().astype(np.uint8))
+            output_mask_video.write(res["mask"])
                             
             if sampleIndex < 30 or options.debug or options.dataset != '':
                 # visualizeBatchPair(options, config, input_pair, detection_pair, indexOffset=sampleIndex % 500, suffix='_' + name + options.modelType, write_ply=options.testingIndex >= 0, write_new_view=options.testingIndex >= 0 and 'occlusion' in options.suffix)
                 pass
             if sampleIndex >= options.numTestingImages:
-                break
+                # break
+                pass
             continue
         
 
