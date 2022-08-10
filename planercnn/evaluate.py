@@ -539,7 +539,7 @@ def evaluate(options):
     SIZE = (int(dataset.input_video.get(cv2.CAP_PROP_FRAME_WIDTH)), int(dataset.input_video.get(cv2.CAP_PROP_FRAME_HEIGHT)))
 
     output_depth_video = cv2.VideoWriter('depth.mp4',cv2.VideoWriter_fourcc(*'mp4v'), FPS, SIZE)
-    output_mask_video = cv2.VideoWriter('mask.mp4',cv2.VideoWriter_fourcc(*'mp4v'), FPS, SIZE, 0)
+    output_mask_video = cv2.VideoWriter('mask.mp4',cv2.VideoWriter_fourcc(*'mp4v'), FPS, SIZE)
     data_iterator = tqdm(dataloader, total=len(dataset))
 
     specified_suffix = options.suffix
@@ -644,7 +644,7 @@ def evaluate(options):
             res = visualizeBatchPair(options, config, input_pair, detection_pair, indexOffset=sampleIndex % 500, suffix='_' + name + options.modelType, write_ply=options.testingIndex >= 0, write_new_view=options.testingIndex >= 0 and 'occlusion' in options.suffix)
             output_depth_video.write(res["depth"])
             output_mask_video.write(res["mask"])
-                            
+
             if sampleIndex < 30 or options.debug or options.dataset != '':
                 # visualizeBatchPair(options, config, input_pair, detection_pair, indexOffset=sampleIndex % 500, suffix='_' + name + options.modelType, write_ply=options.testingIndex >= 0, write_new_view=options.testingIndex >= 0 and 'occlusion' in options.suffix)
                 pass
