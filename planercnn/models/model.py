@@ -312,7 +312,7 @@ def proposal_layer(inputs, proposal_count, nms_threshold, anchors, config=None):
     deltas = inputs[1]
     
     std_dev = Variable(torch.from_numpy(np.reshape(config.RPN_BBOX_STD_DEV, [1, 4])).float(), requires_grad=False)
-    if torch.cuda.is_available() and self.config.GPU_COUNT:
+    if torch.cuda.is_available() and config.GPU_COUNT:
         std_dev = std_dev.cuda()
     deltas = deltas * std_dev
     ## Improve performance by trimming to top anchors by score
@@ -347,7 +347,7 @@ def proposal_layer(inputs, proposal_count, nms_threshold, anchors, config=None):
     
     ## Normalize dimensions to range of 0 to 1.
     norm = Variable(torch.from_numpy(np.array([height, width, height, width])).float(), requires_grad=False)
-    if torch.cuda.is_available() and self.config.GPU_COUNT:
+    if torch.cuda.is_available() and config.GPU_COUNT:
         norm = norm.cuda()
     normalized_boxes = boxes / norm
 
@@ -571,7 +571,7 @@ def detection_target_layer(proposals, gt_class_ids, gt_boxes, gt_masks, gt_param
     gt_masks = gt_masks.squeeze(0)
     gt_parameters = gt_parameters.squeeze(0)
     no_crowd_bool =  Variable(torch.ByteTensor(proposals.size()[0]*[True]), requires_grad=False)
-    if torch.cuda.is_available() and self.config.GPU_COUNT:
+    if torch.cuda.is_available() and config.GPU_COUNT:
         no_crowd_bool = no_crowd_bool.cuda()
 
     ## Compute overlaps matrix [proposals, gt_boxes]
@@ -593,7 +593,7 @@ def detection_target_layer(proposals, gt_class_ids, gt_boxes, gt_masks, gt_param
                              config.ROI_POSITIVE_RATIO)
         rand_idx = torch.randperm(positive_indices.size()[0])
         rand_idx = rand_idx[:positive_count]
-        if torch.cuda.is_available() and self.config.GPU_COUNT:
+        if torch.cuda.is_available() and config.GPU_COUNT:
             rand_idx = rand_idx.cuda()
         positive_indices = positive_indices[rand_idx]
         positive_count = positive_indices.size()[0]
@@ -609,7 +609,7 @@ def detection_target_layer(proposals, gt_class_ids, gt_boxes, gt_masks, gt_param
         ## Compute bbox refinement for positive ROIs
         deltas = Variable(utils.box_refinement(positive_rois.data, roi_gt_boxes.data), requires_grad=False)
         std_dev = Variable(torch.from_numpy(config.BBOX_STD_DEV).float(), requires_grad=False)
-        if torch.cuda.is_available() and self.config.GPU_COUNT:
+        if torch.cuda.is_available() and config.GPU_COUNT:
             std_dev = std_dev.cuda()
         deltas /= std_dev
 
@@ -631,7 +631,7 @@ def detection_target_layer(proposals, gt_class_ids, gt_boxes, gt_masks, gt_param
             x2 = (x2 - gt_x1) / gt_w
             boxes = torch.cat([y1, x1, y2, x2], dim=1)
         box_ids = Variable(torch.arange(roi_masks.size()[0]), requires_grad=False).int()
-        if torch.cuda.is_available() and self.config.GPU_COUNT:
+        if torch.cuda.is_available() and config.GPU_COUNT:
             box_ids = box_ids.cuda()
 
         if config.NUM_PARAMETER_CHANNELS > 0:
@@ -659,7 +659,7 @@ def detection_target_layer(proposals, gt_class_ids, gt_boxes, gt_masks, gt_param
         negative_count = int(r * positive_count - positive_count)
         rand_idx = torch.randperm(negative_indices.size()[0])
         rand_idx = rand_idx[:negative_count]
-        if torch.cuda.is_available() and self.config.GPU_COUNT:
+        if torch.cuda.is_available() and config.GPU_COUNT:
             rand_idx = rand_idx.cuda()
         negative_indices = negative_indices[rand_idx]
         negative_count = negative_indices.size()[0]
@@ -675,11 +675,11 @@ def detection_target_layer(proposals, gt_class_ids, gt_boxes, gt_masks, gt_param
     if positive_count > 0 and negative_count > 0:
         rois = torch.cat((positive_rois, negative_rois), dim=0)
         zeros = Variable(torch.zeros(negative_count), requires_grad=False).int()
-        if torch.cuda.is_available() and self.config.GPU_COUNT:
+        if torch.cuda.is_available() and config.GPU_COUNT:
             zeros = zeros.cuda()
         roi_gt_class_ids = torch.cat([roi_gt_class_ids, zeros], dim=0)
         zeros = Variable(torch.zeros(negative_count, 4), requires_grad=False)
-        if torch.cuda.is_available() and self.config.GPU_COUNT:
+        if torch.cuda.is_available() and config.GPU_COUNT:
             zeros = zeros.cuda()
         deltas = torch.cat([deltas, zeros], dim=0)
         if config.NUM_PARAMETER_CHANNELS > 0:
@@ -687,12 +687,12 @@ def detection_target_layer(proposals, gt_class_ids, gt_boxes, gt_masks, gt_param
         else:
             zeros = Variable(torch.zeros(negative_count,config.MASK_SHAPE[0],config.MASK_SHAPE[1]), requires_grad=False)
             pass
-        if torch.cuda.is_available() and self.config.GPU_COUNT:
+        if torch.cuda.is_available() and config.GPU_COUNT:
             zeros = zeros.cuda()
         masks = torch.cat([masks, zeros], dim=0)
         
         zeros = Variable(torch.zeros(negative_count, config.NUM_PARAMETERS), requires_grad=False)
-        if torch.cuda.is_available() and self.config.GPU_COUNT:
+        if torch.cuda.is_available() and config.GPU_COUNT:
             zeros = zeros.cuda()
         roi_gt_parameters = torch.cat([roi_gt_parameters, zeros], dim=0)
     elif positive_count > 0:
@@ -700,20 +700,20 @@ def detection_target_layer(proposals, gt_class_ids, gt_boxes, gt_masks, gt_param
     elif negative_count > 0:
         rois = negative_rois
         zeros = Variable(torch.zeros(negative_count), requires_grad=False)
-        if torch.cuda.is_available() and self.config.GPU_COUNT:
+        if torch.cuda.is_available() and config.GPU_COUNT:
             zeros = zeros.cuda()
         roi_gt_class_ids = zeros
         zeros = Variable(torch.zeros(negative_count, 4), requires_grad=False).int()
-        if torch.cuda.is_available() and self.config.GPU_COUNT:
+        if torch.cuda.is_available() and config.GPU_COUNT:
             zeros = zeros.cuda()
         deltas = zeros
         zeros = Variable(torch.zeros(negative_count,config.MASK_SHAPE[0],config.MASK_SHAPE[1]), requires_grad=False)
-        if torch.cuda.is_available() and self.config.GPU_COUNT:
+        if torch.cuda.is_available() and config.GPU_COUNT:
             zeros = zeros.cuda()
         masks = zeros
 
         zeros = Variable(torch.zeros(negative_count, config.NUM_PARAMETERS), requires_grad=False)
-        if torch.cuda.is_available() and self.config.GPU_COUNT:
+        if torch.cuda.is_available() and config.GPU_COUNT:
             zeros = zeros.cuda()
         roi_gt_parameters = torch.cat([roi_gt_parameters, zeros], dim=0)        
     else:
@@ -722,7 +722,7 @@ def detection_target_layer(proposals, gt_class_ids, gt_boxes, gt_masks, gt_param
         deltas = Variable(torch.FloatTensor(), requires_grad=False)
         masks = Variable(torch.FloatTensor(), requires_grad=False)
         roi_gt_parameters = Variable(torch.FloatTensor(), requires_grad=False)
-        if torch.cuda.is_available() and self.config.GPU_COUNT:
+        if torch.cuda.is_available() and config.GPU_COUNT:
             rois = rois.cuda()
             roi_gt_class_ids = roi_gt_class_ids.cuda()
             deltas = deltas.cuda()
@@ -771,14 +771,14 @@ def refine_detections(rois, probs, deltas, parameters, window, config, return_in
     ## Class probability of the top class of each ROI
     ## Class-specific bounding box deltas
     idx = torch.arange(class_ids.size()[0]).long()
-    if torch.cuda.is_available() and self.config.GPU_COUNT:
+    if torch.cuda.is_available() and config.GPU_COUNT:
         idx = idx.cuda()
         
     if len(probs.shape) == 1:
         class_scores = torch.ones(class_ids.shape)
         deltas_specific = deltas
         class_parameters = parameters
-        if torch.cuda.is_available() and self.config.GPU_COUNT:
+        if torch.cuda.is_available() and config.GPU_COUNT:
             class_scores = class_scores.cuda()
     else:
         class_scores = probs[idx, class_ids.data]
@@ -787,14 +787,14 @@ def refine_detections(rois, probs, deltas, parameters, window, config, return_in
     ## Apply bounding box deltas
     ## Shape: [boxes, (y1, x1, y2, x2)] in normalized coordinates
     std_dev = Variable(torch.from_numpy(np.reshape(config.RPN_BBOX_STD_DEV, [1, 4])).float(), requires_grad=False)
-    if torch.cuda.is_available() and self.config.GPU_COUNT:
+    if torch.cuda.is_available() and config.GPU_COUNT:
         std_dev = std_dev.cuda()
         
     refined_rois = apply_box_deltas(rois, deltas_specific * std_dev)
     ## Convert coordiates to image domain
     height, width = config.IMAGE_SHAPE[:2]
     scale = Variable(torch.from_numpy(np.array([height, width, height, width])).float(), requires_grad=False)
-    if torch.cuda.is_available() and self.config.GPU_COUNT:
+    if torch.cuda.is_available() and config.GPU_COUNT:
         scale = scale.cuda()
     refined_rois = refined_rois * scale
     ## Clip boxes to image window
