@@ -538,8 +538,8 @@ def evaluate(options):
     FPS = int(dataset.input_video.get(cv2.CAP_PROP_FPS))
     SIZE = (int(dataset.input_video.get(cv2.CAP_PROP_FRAME_WIDTH)), int(dataset.input_video.get(cv2.CAP_PROP_FRAME_HEIGHT)))
 
-    output_depth_video = cv2.VideoWriter('depth.mp4',cv2.VideoWriter_fourcc(*'mp4v'), FPS, SIZE)
-    output_mask_video = cv2.VideoWriter('mask.mp4',cv2.VideoWriter_fourcc(*'mp4v'), FPS, SIZE)
+    output_depth_video = cv2.VideoWriter('depth.mp4',cv2.VideoWriter_fourcc(*'mp4v'), FPS, (640,480))
+    output_mask_video = cv2.VideoWriter('mask.mp4',cv2.VideoWriter_fourcc(*'mp4v'), FPS, (640,480)
     data_iterator = tqdm(dataloader, total=len(dataset))
 
     specified_suffix = options.suffix
@@ -687,7 +687,6 @@ def evaluate(options):
     # plt.show()
     # plt.imshow(detection_pair[0]["mask"][0])
     # plt.show()
-    dataset.input_video.release()
     output_depth_video.release()
     output_mask_video.release()
     return
