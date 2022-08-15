@@ -1,4 +1,6 @@
-The only way that worked on Windows is to install <a href="https://docs.microsoft.com/en-us/windows/wsl/install">WSL2</a> with Ubuntu 18.04. This uses the CPU not the GPU. To use the GPU, 
+## Setup
+The only way that worked on Windows is to install <a href="https://docs.microsoft.com/en-us/windows/wsl/install">WSL2</a> with Ubuntu 18.04. This uses the CPU not the GPU. To use the GPU, use <a href="https://colab.research.google.com/drive/1k9Lj0uw4GRztyMp_JDabTqz2gGf65ZNb#scrollTo=3bxTpOJPTW_s">this</a> colab notebook.
+
 
 ```sh
 $sudo apt update
@@ -35,7 +37,7 @@ $ python evaluate.py --methods=f --suffix=warping_refine --dataset=inference --c
 ```
 The output will be in the *test/* folder.
 
-To test with videos set the path to the video file and the camera file.
+To test with videos set the path to the video file and the camera file. This may take a while as it is running on the CPU. Try running it on colab.
 ```sh
 $ python evaluate.py --methods=f --suffix=warping_refine --dataset=inference --video=video.mp4 --cameraPath=example_images/camera.txt
 ```
