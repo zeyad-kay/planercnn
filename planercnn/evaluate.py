@@ -539,7 +539,7 @@ def evaluate(options):
     SIZE = (int(dataset.input_video.get(cv2.CAP_PROP_FRAME_WIDTH)), int(dataset.input_video.get(cv2.CAP_PROP_FRAME_HEIGHT)))
 
     output_depth_video = cv2.VideoWriter('depth.mp4',cv2.VideoWriter_fourcc(*'mp4v'), FPS, (640,480))
-    output_mask_video = cv2.VideoWriter('mask.mp4',cv2.VideoWriter_fourcc(*'mp4v'), FPS, (640,480)
+    output_mask_video = cv2.VideoWriter('mask.mp4',cv2.VideoWriter_fourcc(*'mp4v'), FPS, (640,480))
     data_iterator = tqdm(dataloader, total=len(dataset))
 
     specified_suffix = options.suffix
