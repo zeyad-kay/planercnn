@@ -512,10 +512,13 @@ def evaluate(options):
         camera[5] = 480
         dataset = InferenceDataset(options, config, image_list=image_list, camera=camera)
     elif 'inference' in options.dataset:
-        image_list = glob.glob(options.customDataFolder + '/*.png') + glob.glob(options.customDataFolder + '/*.jpg')
-        if os.path.exists(options.customDataFolder + '/camera.txt'):
+        image_list = None
+        if options.customDataFolder:
+            image_list = glob.glob(options.customDataFolder + '/*.png') + glob.glob(options.customDataFolder + '/*.jpg')
+        
+        if os.path.exists(options.cameraPath):
             camera = np.zeros(6)
-            with open(options.customDataFolder + '/camera.txt', 'r') as f:
+            with open(options.cameraPath, 'r') as f:
                 for line in f:
                     values = [float(token.strip()) for token in line.split(' ') if token.strip() != '']
                     for c in range(6):
@@ -524,22 +527,27 @@ def evaluate(options):
                     break
                 pass
         else:
-            camera = [filename.replace('.png', '.txt').replace('.jpg', '.txt') for filename in image_list]
-            pass
-        dataset = InferenceDataset(options, config, image_list=image_list, camera=camera)
-        pass
+            # camera = [filename.replace('.png', '.txt').replace('.jpg', '.txt') for filename in image_list]
+            raise Exception("Must specify camera path")
 
-    print('the number of images', len(dataset))
+        dataset = InferenceDataset(options, config, image_list=image_list, camera=camera)
+
+    print('the number of images or frames', len(dataset))
 
     dataloader = DataLoader(dataset, batch_size=1, shuffle=False, num_workers=0)
 
     epoch_losses = []
 
-    FPS = int(dataset.input_video.get(cv2.CAP_PROP_FPS))
-    SIZE = (int(dataset.input_video.get(cv2.CAP_PROP_FRAME_WIDTH)), int(dataset.input_video.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+    if options.video:
+        FPS = int(dataset.input_video.get(cv2.CAP_PROP_FPS))
+        # SIZE = (int(dataset.input_video.get(cv2.CAP_PROP_FRAME_WIDTH)), int(dataset.input_video.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+        
+        # the network resizes the image to (640,480) so we cannot maintain same size
+        SIZE = (640,480)
 
-    output_depth_video = cv2.VideoWriter('depth.mp4',cv2.VideoWriter_fourcc(*'mp4v'), FPS, (640,480))
-    output_mask_video = cv2.VideoWriter('mask.mp4',cv2.VideoWriter_fourcc(*'mp4v'), FPS, (640,480))
+        output_depth_video = cv2.VideoWriter('depth.mp4',cv2.VideoWriter_fourcc(*'mp4v'), FPS, SIZE)
+        output_mask_video = cv2.VideoWriter('mask.mp4',cv2.VideoWriter_fourcc(*'mp4v'), FPS, SIZE)
+
     data_iterator = tqdm(dataloader, total=len(dataset))
 
     specified_suffix = options.suffix
@@ -634,23 +642,26 @@ def evaluate(options):
                 for c in range(len(input_pair)):
                     evaluateBatchDetection(options, config, input_pair[c], detection_pair[c], statistics=statistics, printInfo=options.debug, evaluate_plane=options.dataset == '')
                     continue
-            else:
+            elif not options.video:
                 for c in range(len(detection_pair)):
-                    # np.save(options.test_dir + '/' + str(sampleIndex % 500) + '_plane_parameters_' + str(c) + '.npy', detection_pair[c]['detection'][:, 6:9])
-                    # np.save(options.test_dir + '/' + str(sampleIndex % 500) + '_plane_masks_' + str(c) + '.npy', detection_pair[c]['masks'][:, 80:560])
+                    np.save(options.test_dir + '/' + str(sampleIndex % 500) + '_plane_parameters_' + str(c) + '.npy', detection_pair[c]['detection'][:, 6:9])
+                    np.save(options.test_dir + '/' + str(sampleIndex % 500) + '_plane_masks_' + str(c) + '.npy', detection_pair[c]['masks'][:, 80:560])
                     continue
                 pass
             
-            res = visualizeBatchPair(options, config, input_pair, detection_pair, indexOffset=sampleIndex % 500, suffix='_' + name + options.modelType, write_ply=options.testingIndex >= 0, write_new_view=options.testingIndex >= 0 and 'occlusion' in options.suffix)
-            output_depth_video.write(res["depth"])
-            output_mask_video.write(res["mask"])
+            if options.video:
+                res = visualizeBatchPair(options, config, input_pair, detection_pair, indexOffset=sampleIndex % 500, suffix='_' + name + options.modelType, write_ply=options.testingIndex >= 0, write_new_view=options.testingIndex >= 0 and 'occlusion' in options.suffix)
+                output_depth_video.write(res["depth"])
+                output_mask_video.write(res["mask"])
+            else:
+                visualizeBatchPair(options, config, input_pair, detection_pair, indexOffset=sampleIndex % 500, suffix='_' + name + options.modelType, write_ply=options.testingIndex >= 0, write_new_view=options.testingIndex >= 0 and 'occlusion' in options.suffix)
 
-            if sampleIndex < 30 or options.debug or options.dataset != '':
+            # if sampleIndex < 30 or options.debug or options.dataset != '':
                 # visualizeBatchPair(options, config, input_pair, detection_pair, indexOffset=sampleIndex % 500, suffix='_' + name + options.modelType, write_ply=options.testingIndex >= 0, write_new_view=options.testingIndex >= 0 and 'occlusion' in options.suffix)
-                pass
-            if sampleIndex >= options.numTestingImages:
+                # pass
+            # if sampleIndex >= options.numTestingImages:
                 # break
-                pass
+                # pass
             continue
         
 
@@ -670,25 +681,11 @@ def evaluate(options):
             np.save('logs/all_statistics.npy', all_statistics)
             pass
         pass
+
+    if options.video:
+        output_depth_video.release()
+        output_mask_video.release()
     
-#     dict_keys(['image', 'depth', 'bbox', 'extrinsics', 'segmentation', 'camera', 'plane', 'masks', 'mask'])
-# --------------
-# dict_keys(['XYZ', 'depth', 'mask', 'detection', 'masks', 'depth_np', 'plane_XYZ', 'depth_ori'])
-    # print(input_pair[0].keys())
-    # print("--------------")
-    # print(detection_pair[0].keys())
-    # for k,v in input_pair[0].items():
-    #     print(k,v.shape)
-    # print("-------")
-    # for k,v in detection_pair[0].items():
-    #     print(k,v.shape)
-    # import matplotlib.pyplot as plt
-    # plt.imshow(input_pair[0]["mask"])
-    # plt.show()
-    # plt.imshow(detection_pair[0]["mask"][0])
-    # plt.show()
-    output_depth_video.release()
-    output_mask_video.release()
     return
 
 if __name__ == '__main__':
@@ -709,29 +706,8 @@ if __name__ == '__main__':
         args.printInfo = True
         pass
 
-    ## Write html for visualization
-    if False:
-        if False:
-            info_list = ['image_0', 'segmentation_0', 'segmentation_0_warping', 'depth_0', 'depth_0_warping']
-            writeHTML(args.test_dir, info_list, numImages=100, convertToImage=False, filename='index', image_width=256)
-            pass
-        if False:
-            info_list = ['image_0', 'segmentation_0', 'detection_0_planenet', 'detection_0_warping', 'detection_0_refine']
-            writeHTML(args.test_dir, info_list, numImages=20, convertToImage=True, filename='comparison_segmentation')
-            pass
-        if False:
-            info_list = ['image_0', 'segmentation_0', 'segmentation_0_manhattan_gt', 'segmentation_0_planenet', 'segmentation_0_warping']
-            writeHTML(args.test_dir, info_list, numImages=30, convertToImage=False, filename='comparison_segmentation')
-            pass
-        exit(1)
-        pass
-
     if not os.path.exists(args.test_dir):
         os.system("mkdir -p %s"%args.test_dir)
-        pass
-
-    if args.debug and args.dataset == '':
-        os.system('rm ' + args.test_dir + '/*')
         pass
 
     evaluate(args)

@@ -33,7 +33,9 @@ class InferenceDataset(Dataset):
                                                       config.BACKBONE_SHAPES,
                                                       config.BACKBONE_STRIDES,
                                                       config.RPN_ANCHOR_STRIDE)
-        self.input_video = cv2.VideoCapture('video.mp4')
+        self.input_video = None
+        if options.video:
+            self.input_video = cv2.VideoCapture(options.video)
 
     def __getitem__(self, index):
         t = int(time.time() * 1000000)
@@ -41,21 +43,24 @@ class InferenceDataset(Dataset):
                        ((t & 0x00ff0000) >> 8) +
                        ((t & 0x0000ff00) << 8) +
                        ((t & 0x000000ff) << 24))
-        if self.random:
-            index = np.random.randint(len(self.imagePaths))
+
+        if not self.input_video:
+            if self.random:
+                index = np.random.randint(len(self.imagePaths))
+            else:
+                index = index % len(self.imagePaths)
+                pass
+
+        if self.input_video:
+            success, image = self.input_video.read()
+            if not success:
+                self.input_video.release()
+                raise IndexError()
         else:
-            index = index % len(self.imagePaths)
-            pass
+            imagePath = self.imagePaths[index]
+            image = cv2.imread(imagePath)
 
-        # imagePath = self.imagePaths[index]
-        # image = cv2.imread(imagePath)
-
-        success, frame = self.input_video.read()
         extrinsics = np.eye(4, dtype=np.float32)
-        if not success:
-            self.input_video.release()
-            raise IndexError()
-        
         if isinstance(self.camera, list):
             if isinstance(self.camera[index], str):
                 camera = np.zeros(6)
@@ -76,7 +81,7 @@ class InferenceDataset(Dataset):
             assert(False)
             pass
         
-        image = cv2.resize(frame, (640, 480), interpolation=cv2.INTER_LINEAR)
+        image = cv2.resize(image, (640, 480), interpolation=cv2.INTER_LINEAR)
         camera[[0, 2, 4]] *= 640.0 / camera[4]        
         camera[[1, 3, 5]] *= 480.0 / camera[5]
         
@@ -173,4 +178,8 @@ class InferenceDataset(Dataset):
         return data_pair
     
     def __len__(self):
-        return int(self.input_video.get(cv2.CAP_PROP_FRAME_COUNT))
+        
+        if self.input_video:
+            return int(self.input_video.get(cv2.CAP_PROP_FRAME_COUNT))
+        else:
+            return len(self.imagePaths)

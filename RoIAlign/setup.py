@@ -14,7 +14,7 @@ setup(
 
     package_data={
         'roi_align': [
-            '_ext/crop_and_resize/*.so',
+            '_ext/crop_and_resize/*',
         ]
     }
 )

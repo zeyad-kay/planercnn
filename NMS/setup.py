@@ -14,7 +14,7 @@ setup(
 
     package_data={
         'nms': [
-            '_ext/nms/*.so',
+            '_ext/nms/*',
         ]
     }
 )

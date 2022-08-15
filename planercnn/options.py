@@ -34,10 +34,13 @@ def parse_args():
                         default='../../Data/ScanNet/', type=str)
     parser.add_argument('--anchorFolder', dest='anchorFolder',
                         help='anchor folder',
-                        default='anchors/', type=str)    
+                        default='anchors/', type=str)
+    parser.add_argument('--video', dest='video',
+                        help='video file', type=str)
     parser.add_argument('--customDataFolder', dest='customDataFolder',
-                        help='data folder',
-                        default='test/custom', type=str)
+                        help='data folder', type=str)
+    parser.add_argument('--cameraPath', dest='cameraPath',
+                        help='camera file path', type=str)
     parser.add_argument('--MaskRCNNPath', dest='MaskRCNNPath',
                         help='path to Mask R-CNN weights',
                         default='../mask_rcnn_coco.pth', type=str)    
