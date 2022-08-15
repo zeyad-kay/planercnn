@@ -9,3 +9,4 @@ __pycache__
 test_images/
 build/
 dist/
+*.mp4
