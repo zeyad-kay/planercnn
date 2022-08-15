@@ -16,7 +16,7 @@ if [[ "$CUDA" != "" ]]; then
 
     cd ..
 
-    echo "Installing NMS CPU build..."
+    echo "Installing NMS GPU build..."
     cd NMS/nms/src/cuda
     $CUDA/bin/nvcc -c -o nms_kernel.cu.o nms_kernel.cu -x cu -Xcompiler -fPIC -arch=sm_62
 
