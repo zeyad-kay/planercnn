@@ -1,5 +1,5 @@
 ## Setup
-The only way that worked on Windows is to install <a href="https://docs.microsoft.com/en-us/windows/wsl/install">WSL2</a> with Ubuntu 18.04. This uses the CPU not the GPU. To use the GPU, use <a href="https://colab.research.google.com/drive/1k9Lj0uw4GRztyMp_JDabTqz2gGf65ZNb#scrollTo=3bxTpOJPTW_s">this</a> colab notebook.
+The only way that worked on Windows is to install <a href="https://docs.microsoft.com/en-us/windows/wsl/install">WSL2</a> with Ubuntu 18.04. The following setup uses the CPU not the GPU. To use the GPU, check <a href="https://colab.research.google.com/drive/1k9Lj0uw4GRztyMp_JDabTqz2gGf65ZNb#scrollTo=3bxTpOJPTW_s">this</a> colab notebook. The notebook installs CUDA v9 and its compatible torch build.
 
 
 ```sh
@@ -18,18 +18,16 @@ $sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 90
 $python3 -m venv .venv
 $source .venv/bin/activate
 
-# opencv dependencies
-$sudo apt install -y libsm6 libxrender-dev
+# install torch 0.4.1 CPU build
+# if you have python3.7, you should download torch-0.4.1-cp37-cp37m-linux_x86_64.whl instead
+$pip install https://download.pytorch.org/whl/cpu/torch-0.4.1-cp36-cp36m-linux_x86_64.whl
 
 # install dependencies
-$pip install -r requirements.txt
-
-# Install RoIAlign
-$cd RoIAlign/roi_align/ && python build.py && cd .. && python setup.py install && cd ..
-
-# Install Non Maximum Suppression
-$cd NMS/nms/ && python build.py && cd .. && python setup.py install && cd ..
+$./install.sh
 ```
+
+## Inference
+Download the *checkpoint/* folder from the drive and place it inside the *planercnn/* folder.
 
 To test with images set the images folder path and the camera path.
 ```sh
