@@ -20,7 +20,7 @@ $source .venv/bin/activate
 
 # install torch 0.4.1 CPU build
 # if you have python3.7, you should download torch-0.4.1-cp37-cp37m-linux_x86_64.whl instead
-$pip install https://download.pytorch.org/whl/cpu/torch-0.4.1-cp36-cp36m-linux_x86_64.whl
+$pip install numpy==1.16.0 https://download.pytorch.org/whl/cpu/torch-0.4.1-cp36-cp36m-linux_x86_64.whl
 
 # install dependencies
 $./install.sh
